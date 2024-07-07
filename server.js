@@ -3,6 +3,7 @@ const { sequelize } = require('./models/user.model'); // Import Sequelize instan
 
 const controllers = require('./controller/user.controller');
 const { verifyToken } = require('./midleware/jwt.auth');
+const port = process.env.PORT || 8000
 
 const app = express();
 
@@ -24,3 +25,12 @@ app.get('/api/organisations', verifyToken, organisationController.getOrganisatio
 
 
 module.exports = app;
+
+
+
+
+
+app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+});
+
