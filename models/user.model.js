@@ -1,8 +1,8 @@
 const Sequelize = require('sequelize');
-
+require('dotenv').config()
 const bcrypt = require('bcryptjs');
 
-const sequelize = new Sequelize("postgres://default:GykuY7w5ORVZ@ep-fragrant-brook-a4584x3k.us-east-1.aws.neon.tech:5432/verceldb?sslmode=require");
+const sequelize = new Sequelize(process.env.DATABASE);
 
 const User = sequelize.define('User', {
   userId: {
@@ -80,8 +80,8 @@ const Organisation = sequelize.define('Organisation', {
   },
 });
 
-User.hasMany(Organisation, { foreignKey: 'userId' });
-Organisation.belongsTo(User, { foreignKey: 'userId' });
+User.belongsToMany(Organisation, { through: 'userId' });
+Organisation.belongsToMany(User, { through: 'user_org', as: 'organisation' });
 
 module.exports = {
   User,

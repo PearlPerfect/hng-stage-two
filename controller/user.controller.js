@@ -113,6 +113,10 @@ const createOrganisation = async (req, res) => {
       description,
       userId,
     });
+   
+    const user = await User.findByPk(userId);
+    await user.addOrganisation(organisation)
+  
 
     res.status(201).json({
       status: "success",
@@ -245,32 +249,32 @@ const getOrganisations = async (req, res) => {
 //   }
 // };
 
+
+
 const addUserToOrganization = async (req, res) => {
   const orgId = req.params.orgId;
-  const owner = req.user.userId;
-  const userId = req.body.userId;
+  const userId = req.user.userId;
+  const userToBeRegistered = req.body.userId; // Assuming user ID is in request body
 
   try {
-    const organisationData = await Organisation.findByPk(orgId);
-
+    // Validate input data (optional)
+    if (!orgId || !userId || !userToBeRegistered) {
+      return res.status(400).json({
+        status: "Bad Request",
+        message: "Missing required fields",
+      });
+    }
+    const organisationData = await Organisation.findByPk(orgId)
     if (!organisationData) {
       return res.status(404).json({
         status: "Not found",
         message: "Organisation not found",
       });
     }
-
-    const isAuthourizedOwner = organisationData.userId;
-    if (owner !== isAuthourizedOwner) {
-      return res.status(401).json({
-        status: "unauthorized",
-        message: "You are not authorized to perform this action",
-      });
-    }
-
-    // Check if user is already a member
-    const isMember = await Organisation.findOne({where:{ userId}});
-
+    
+    const userToBeAdded = await User.findByPk(userToBeRegistered)
+    const isMember = await (userToBeAdded.hasOrganisation(orgId))
+    console.log(isMember)
     if (isMember) {
       return res.status(400).json({
         status: "Bad Request",
@@ -278,25 +282,92 @@ const addUserToOrganization = async (req, res) => {
       });
     }
 
-    // User is not a member, proceed with adding
-    await Organisation.create({
+    
+   
+   const organisation = await Organisation.create({
       name: organisationData.name,
       description: organisationData.description,
-      userId: userToBeRegistered,
-    });
+      userId : userToBeRegistered
+    })
+
+    const user = await User.findByPk(userToBeRegistered);
+    await user.addOrganisation(organisation)
 
     res.status(200).json({
       status: "success",
       message: "User added to organisation successfully",
+      data: organisation
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      status: "Error",
-      message: "Internal server error",
-    });
+    if (error instanceof SequelizeValidationError) {
+      return res.status(400).json({
+        status: "Bad Request",
+        message: error.errors[0].message, 
+      });
+    } else {
+      return res.status(500).json({
+        status: "Error",
+        message: "Internal server error", 
+      });
+    }
   }
 };
+
+
+
+
+// const addUserToOrganization = async (req, res) => {
+//   const orgId = req.params.orgId;
+//   const owner = req.user.userId;
+//   const userId = req.body.userId;
+
+//   try {
+//     const organisationData = await Organisation.findByPk(orgId);
+//     if (!organisationData) {
+//       return res.status(404).json({
+//         status: "Not found",
+//         message: "Organisation not found",
+//       });
+//     }
+
+//     const isAuthourizedOwner = organisationData.userId;
+//     if (owner !== isAuthourizedOwner) {
+//       return res.status(401).json({
+//         status: "unauthorized",
+//         message: "You are not authorized to perform this action",
+//       });
+//     }
+
+//     // Check if user is already a member
+//     const isMember = await Organisation.findOne({where:{ userId}});
+
+//     if (isMember) {
+//       return res.status(400).json({
+//         status: "Bad Request",
+//         message: "User already belongs to this organisation",
+//       });
+//     }
+
+//     // User is not a member, proceed with adding
+//     await Organisation.create({
+//       name: organisationData.name,
+//       description: organisationData.description,
+//       userId: userToBeRegistered,
+//     });
+
+//     res.status(200).json({
+//       status: "success",
+//       message: "User added to organisation successfully",
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       status: "Error",
+//       message: "Internal server error",
+//     });
+//   }
+// };
 
 
 module.exports = {
