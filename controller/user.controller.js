@@ -285,6 +285,7 @@ const addUserToOrganization = async (req, res) => {
     
    
    const organisation = await Organisation.create({
+      orgId: organisationData.orgId,
       name: organisationData.name,
       description: organisationData.description,
       userId : userToBeRegistered
