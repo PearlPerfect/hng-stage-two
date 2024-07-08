@@ -1,7 +1,8 @@
 const Sequelize = require('sequelize');
+
 const bcrypt = require('bcryptjs');
 
-const sequelize = new Sequelize("../config/database.config.js");
+const sequelize = new Sequelize("postgres://default:GykuY7w5ORVZ@ep-fragrant-brook-a4584x3k.us-east-1.aws.neon.tech:5432/verceldb?sslmode=require");
 
 const User = sequelize.define('User', {
   userId: {
@@ -17,11 +18,6 @@ const User = sequelize.define('User', {
       isAlpha: {
         msg: "firstName must contain only letters",
       },
-      customValidator(value) {
-        if (typeof value !== "string") {
-          throw new Error("firstName must be a string");
-        }
-      },
     },
   },
   lastName: {
@@ -32,11 +28,6 @@ const User = sequelize.define('User', {
       isAlpha: {
         msg: "lastName must contain only letters",
       },
-      customValidator(value) {
-        if (typeof value !== "string") {
-          throw new Error("lastName must be a string");
-        }
-      },
     },
   },
   email: {
@@ -45,11 +36,6 @@ const User = sequelize.define('User', {
     unique: true,
     validate: {
       isEmail: true,
-      checkEmail: function (value) {
-        if (!this.email.isEmail) {
-          throw new Error("Invalid email format");
-        }
-      },
     },
   },
   password: {
@@ -58,18 +44,14 @@ const User = sequelize.define('User', {
     validate: {
       notEmpty: true,
       len: {
-        args: [8, 13],
+        args: [6, 13],
         msg: "Password must be between 8 and 13 characters",
       },
     },
   },
   phone: {
     type: Sequelize.STRING,
-    validate:{
-      isPhoneNum: {
-        msg: "Invalid phone number format",
-      },
-    }
+  
   },
 }, {
   hooks: {
