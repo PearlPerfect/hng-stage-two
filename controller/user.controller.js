@@ -203,7 +203,11 @@ async function getUserOrganisations(req, res) {
     res.status(200).json({
       status: 'success',
       message: 'User organizations retrieved successfully',
-      data: organizations,
+      data: {
+        orgId: organizations.orgId,
+        name: organizations.name,
+        description: organizations.description
+      },
     });
   } catch (error) {
     console.error(error);
