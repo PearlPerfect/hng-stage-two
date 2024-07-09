@@ -12,10 +12,15 @@ if(!email){
 }
   const existingUser = await User.findOne({ where: { email } });
   if (existingUser) {
-    return res.status(422).json({
-      errors: [
-        { field: "email", message: "Email already in use. Try another email" },
-      ],
+    // return res.status(422).json({
+    //   errors: [
+    //     { field: "email", message: "Email already in use. Try another email" },
+    //   ],
+    // });
+
+    return res.status(400).json({
+      status: "Bad request",
+      message: "Registration unsuccessful",
     });
   }
   try {
@@ -56,15 +61,15 @@ if(!email){
     });
   } catch (errors) {
   
-    if(errors && errors.name == "SequelizeValidationError"){
-      const error = errors.errors.map(error => ({
-      field: error.path,
-      message: `${error.path} cannot be empty`
-    }));
-      return res.status(422).json({
-        error
-      });
-    }
+    // if(errors && errors.name == "SequelizeValidationError"){
+    //   const error = errors.errors.map(error => ({
+    //   field: error.path,
+    //   message: `${error.path} cannot be empty`
+    // }));
+    //   return res.status(422).json({
+    //     error
+    //   });
+    // }
 
     res.status(400).json({
       status: "Bad request",
@@ -87,8 +92,12 @@ const login = async (req, res) => {
   try {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(422).json({
-        message: "Incorrect password, try another password",
+      // return res.status(422).json({
+      //   message: "Incorrect password, try another password",
+      // });
+      return res.status(401).json({
+        status: "Bad request",
+        message: "Authentication failed",
       });
     }
 
