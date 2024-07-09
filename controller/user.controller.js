@@ -14,7 +14,7 @@ if(!email){
   if (existingUser) {
     return res.status(422).json({
       errors: [
-        { field: "email", message: "Email already in use. Try another email" },
+        { message: "Email already in use. Try another email" },
       ],
     });
   }
@@ -79,7 +79,7 @@ const login = async (req, res) => {
   if (!user) {
     return res.status(422).json({
       errors: [
-        { field: "email", message: "Email not found, try another email" },
+        { message: "Email not found, try another email" },
       ],
     });
   }
@@ -87,8 +87,7 @@ const login = async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(422).json({
-        status: "Bad request",
-        message: "Incorrect password",
+        message: "Incorrect password, try another password",
       });
     }
 
@@ -186,14 +185,14 @@ const getUser = async (req, res) => {
 
 
 async function getUserOrganisations(req, res) {
-  const userId = req.user.userId; // Assuming user ID is retrieved from request parameters
+  const userId = req.user.userId; 
   console.log(userId)
 
   try {
     const user = await User.findByPk(userId, {
       include: {
         model: Organisation,
-        through: 'user_organisations', // Specify the junction table
+        through: 'user_organisations', 
         attributes: ['orgId', 'name', 'description']
       },
     });
@@ -210,7 +209,7 @@ async function getUserOrganisations(req, res) {
       orgId: org.orgId,
       name: org.name,
       description: org.description,
-    })); // Array of organizations the user belongs to
+    })); 
 
     res.status(200).json({
       status: 'success',
@@ -235,7 +234,7 @@ const userId = req.user.userId;
  const newUserId = req.body.userId;
 
   try {
-    // Find the organisation the user wants to add to
+
     const organisation = await Organisation.findByPk(orgId, {
       include: {
         model: User, // Include the creator user
@@ -246,7 +245,7 @@ const userId = req.user.userId;
     if (!organisation) {
       return res.status(404).json({
         status: 'Not Found',
-        message: 'Organisation not found or you are not the creator',
+        message: 'Organisation not found or you cannot add user to this organisation',
       });
     }
 
@@ -269,9 +268,8 @@ const userId = req.user.userId;
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      status: 'Error',
-      message: 'Internal server error',
+    res.status(401).json({
+      message: 'Authentication fail',
     });
   }
 }
