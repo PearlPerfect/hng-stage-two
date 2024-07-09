@@ -7,7 +7,9 @@ const { generateToken } = require("../midleware/jwt.auth");
 
 const userRegistration = async (req, res) => {
   const { firstName, lastName, email, password, phone } = req.body;
-
+if(!email){
+  return res.status(422).json({message: "Email is required"})
+}
   const existingUser = await User.findOne({ where: { email } });
   if (existingUser) {
     return res.status(422).json({
@@ -50,15 +52,22 @@ const userRegistration = async (req, res) => {
           email: user.email,
           phone: user.phone,
         },
-        organisation
       },
     });
-  } catch (error) {
-    console.log(error);
+  } catch (errors) {
+  
+    if(errors && errors.name == "SequelizeValidationError"){
+      const error = errors.errors.map(error => ({
+      message: `${error.path} cannot be empty`
+    }));
+      return res.status(422).json({
+        error
+      });
+    }
+
     res.status(400).json({
       status: "Bad request",
       message: "Registration unsuccessful",
-      error,
     });
   }
 };
@@ -130,7 +139,6 @@ const createOrganisation = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
     res.status(400).json({
       status: "Bad Request",
       message: "Error in creating organisation",
