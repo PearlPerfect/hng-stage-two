@@ -8,13 +8,13 @@ const { generateToken } = require("../midleware/jwt.auth");
 const userRegistration = async (req, res) => {
   const { firstName, lastName, email, password, phone } = req.body;
 if(!email){
-  return res.status(422).json({message: "Email is required"})
+  return res.status(422).json({field: "email", message: "Email is required"})
 }
   const existingUser = await User.findOne({ where: { email } });
   if (existingUser) {
     return res.status(422).json({
       errors: [
-        { message: "Email already in use. Try another email" },
+        { field: "email", message: "Email already in use. Try another email" },
       ],
     });
   }
@@ -56,14 +56,15 @@ if(!email){
     });
   } catch (errors) {
   
-    // if(errors && errors.name == "SequelizeValidationError"){
-    //   const error = errors.errors.map(error => ({
-    //   message: `${error.path} cannot be empty`
-    // }));
-    //   return res.status(422).json({
-    //     error
-    //   });
-    // }
+    if(errors && errors.name == "SequelizeValidationError"){
+      const error = errors.errors.map(error => ({
+      field: error.path,
+      message: `${error.path} cannot be empty`
+    }));
+      return res.status(422).json({
+        error
+      });
+    }
 
     res.status(400).json({
       status: "Bad request",
@@ -79,7 +80,7 @@ const login = async (req, res) => {
   if (!user) {
     return res.status(422).json({
       errors: [
-        { message: "Email not found, try another email" },
+        { field: "email",message: "Email not found, try another email" },
       ],
     });
   }
