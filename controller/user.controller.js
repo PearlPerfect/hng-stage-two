@@ -100,9 +100,9 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      status: "Error",
-      message: "Internal server error",
+    res.status(401).json({
+      status: "Bad request",
+      message: "Authentication failed",
     });
   }
 };
@@ -165,9 +165,9 @@ const getUser = async (req, res) => {
   });
 } catch (error) {
   console.error(error);
-  res.status(500).json({
-    status: 'Error',
-    message: 'Internal server error',
+  res.status(422).json({
+    status: 'Unauthorized',
+    message: 'Fail to get user Data',
   });
 }
 };
