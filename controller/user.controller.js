@@ -56,14 +56,14 @@ if(!email){
     });
   } catch (errors) {
   
-    if(errors && errors.name == "SequelizeValidationError"){
-      const error = errors.errors.map(error => ({
-      message: `${error.path} cannot be empty`
-    }));
-      return res.status(422).json({
-        error
-      });
-    }
+    // if(errors && errors.name == "SequelizeValidationError"){
+    //   const error = errors.errors.map(error => ({
+    //   message: `${error.path} cannot be empty`
+    // }));
+    //   return res.status(422).json({
+    //     error
+    //   });
+    // }
 
     res.status(400).json({
       status: "Bad request",
