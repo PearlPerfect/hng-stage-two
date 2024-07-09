@@ -7,9 +7,11 @@ const { generateToken } = require("../midleware/jwt.auth");
 
 const userRegistration = async (req, res) => {
   const { firstName, lastName, email, password, phone } = req.body;
-if(!email){
-  return res.status(422).json({field: "email", message: "Email is required"})
-}
+  if (!email) {
+    return res
+      .status(422)
+      .json({ field: "email", message: "Email is required" });
+  }
   const existingUser = await User.findOne({ where: { email } });
   if (existingUser) {
     // return res.status(422).json({
@@ -43,7 +45,6 @@ if(!email){
     });
     await user.addOrganisation(organisation);
 
-
     const token = generateToken(user);
     res.status(201).json({
       status: "success",
@@ -60,7 +61,6 @@ if(!email){
       },
     });
   } catch (errors) {
-  
     // if(errors && errors.name == "SequelizeValidationError"){
     //   const error = errors.errors.map(error => ({
     //   field: error.path,
@@ -83,10 +83,14 @@ const login = async (req, res) => {
 
   const user = await User.findOne({ where: { email } });
   if (!user) {
-    return res.status(422).json({
-      errors: [
-        { field: "email",message: "Email not found, try another email" },
-      ],
+    // return res.status(422).json({
+    //   errors: [
+    //     { field: "email",message: "Email not found, try another email" },
+    //   ],
+    // });
+    return res.status(401).json({
+      status: "Bad request",
+      message: "Authentication failed",
     });
   }
   try {
@@ -128,7 +132,7 @@ const login = async (req, res) => {
 const createOrganisation = async (req, res) => {
   const { name, description } = req.body;
   const userId = req.user.userId;
- 
+
   try {
     const organisation = await Organisation.create({
       name,
@@ -137,7 +141,7 @@ const createOrganisation = async (req, res) => {
     });
 
     await organisation.addUser(userId);
-   
+
     res.status(201).json({
       status: "success",
       message: "Organisation created successfully",
@@ -155,96 +159,84 @@ const createOrganisation = async (req, res) => {
   }
 };
 const getUser = async (req, res) => {
-  
-  try{
-  const userId = req.params.id;
-  const authorizedUser = req.user.userId
-  const user = await User.findOne({where: {userId} })
- 
-  if (!user) {
-    return res.status(404).json({
-      status: 'Not Found',
-      message: 'User not found',
+  try {
+    const userId = req.params.id;
+    const authorizedUser = req.user.userId;
+    const user = await User.findOne({ where: { userId } });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "Not Found",
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "user details retrieved successfully",
+      data: {
+        userId: user.userId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user?.phone,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(422).json({
+      status: "Unauthorized",
+      message: "Fail to get user Data",
     });
   }
-
-
-  res.status(200).json({
-    status: "success",
-    message: "user details retrieved successfully",
-    data:{
-      userId: user.userId,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user?.phone,
-    }
-  });
-} catch (error) {
-  console.error(error);
-  res.status(422).json({
-    status: 'Unauthorized',
-    message: 'Fail to get user Data',
-  });
-}
 };
 
-
-
-
-
-
 async function getUserOrganisations(req, res) {
-  const userId = req.user.userId; 
-  console.log(userId)
+  const userId = req.user.userId;
+  console.log(userId);
 
   try {
     const user = await User.findByPk(userId, {
       include: {
         model: Organisation,
-        through: 'user_organisations', 
-        attributes: ['orgId', 'name', 'description']
+        through: "user_organisations",
+        attributes: ["orgId", "name", "description"],
       },
     });
-  
 
     if (!user) {
       return res.status(404).json({
-        status: 'Not Found',
-        message: 'User not found',
+        status: "Not Found",
+        message: "User not found",
       });
     }
 
-    const organizations = user.Organisations.map(org => ({
+    const organizations = user.Organisations.map((org) => ({
       orgId: org.orgId,
       name: org.name,
       description: org.description,
-    })); 
+    }));
 
     res.status(200).json({
-      status: 'success',
-      message: 'User organizations retrieved successfully',
-      data: {organizations},
+      status: "success",
+      message: "User organizations retrieved successfully",
+      data: { organizations },
     });
   } catch (error) {
     console.error(error);
     res.status(422).json({
-      status: 'Error',
+      status: "Error",
       message: "Could not retrieve user's organisation",
     });
   }
 }
 
-
-
-
 async function addUserToOrganisation(req, res) {
   const orgId = req.params.orgId;
-const userId = req.user.userId;
- const newUserId = req.body.userId;
+  const userId = req.user.userId;
+  const newUserId = req.body.userId;
 
   try {
-
     const organisation = await Organisation.findByPk(orgId, {
       include: {
         model: User, // Include the creator user
@@ -254,8 +246,9 @@ const userId = req.user.userId;
 
     if (!organisation) {
       return res.status(404).json({
-        status: 'Not Found',
-        message: 'Organisation not found or you cannot add user to this organisation',
+        status: "Not Found",
+        message:
+          "Organisation not found or you cannot add user to this organisation",
       });
     }
 
@@ -264,8 +257,8 @@ const userId = req.user.userId;
 
     if (!newUser) {
       return res.status(404).json({
-        status: 'Not Found',
-        message: 'User to be added not found',
+        status: "Not Found",
+        message: "User to be added not found",
       });
     }
 
@@ -273,20 +266,16 @@ const userId = req.user.userId;
     await organisation.addUser(newUser);
 
     res.status(200).json({
-      status: 'success',
-      message: 'User added to organisation successfully',
+      status: "success",
+      message: "User added to organisation successfully",
     });
   } catch (error) {
     console.error(error);
     res.status(401).json({
-      message: 'Authentication fail',
+      message: "Authentication fail",
     });
   }
 }
-
-
-
-
 
 module.exports = {
   userRegistration,
