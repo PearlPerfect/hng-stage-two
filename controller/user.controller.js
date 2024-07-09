@@ -186,6 +186,7 @@ async function getUserOrganisations(req, res) {
       include: {
         model: Organisation,
         through: 'user_organisations', // Specify the junction table
+        attributes: ['orgId', 'name', 'description']
       },
     });
   
@@ -197,23 +198,22 @@ async function getUserOrganisations(req, res) {
       });
     }
 
-    const organizations = user.Organisations; // Array of organizations the user belongs to
-
+    const organizations = user.Organisations.map(org => ({
+      orgId: org.orgId,
+      name: org.name,
+      description: org.description,
+    })); // Array of organizations the user belongs to
 
     res.status(200).json({
       status: 'success',
       message: 'User organizations retrieved successfully',
-      data: {
-        orgId: organizations.orgId,
-        name: organizations.name,
-        description: organizations.description
-      },
+      data: {organizations},
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    res.status(422).json({
       status: 'Error',
-      message: 'Internal server error',
+      message: "Could not retrieve user's organisation",
     });
   }
 }
