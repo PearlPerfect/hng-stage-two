@@ -43,10 +43,10 @@ const User = sequelize.define('User', {
     allowNull: false,
     validate: {
       notEmpty: true,
-      len: {
-        args: [6, 13],
-        msg: "Password must be between 8 and 13 characters",
-      },
+      // len: {
+      //   args: [6, 13],
+      //   msg: "Password must be between 8 and 13 characters",
+      // },
     },
   },
   phone: {
@@ -80,8 +80,8 @@ const Organisation = sequelize.define('Organisation', {
   },
 });
 
-User.belongsToMany(Organisation, { through: 'userId' });
-Organisation.belongsToMany(User, { through: 'user_org', as: 'organisation' });
+User.belongsToMany(Organisation, { through: 'user_organisations' });
+Organisation.belongsToMany(User, { through: 'user_organisations' });
 
 module.exports = {
   User,

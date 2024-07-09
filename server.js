@@ -21,9 +21,9 @@ app.use(cors());
 app.post('/auth/register', controllers.userRegistration);
 app.post('/auth/login', controllers.login);
 app.post('/api/organisations', verifyToken, controllers.createOrganisation);
-app.post('/api/organisations/:orgId/users', verifyToken, controllers.addUserToOrganization)
+app.post('/api/organisations/:orgId/users', verifyToken, controllers.addUserToOrganisation)
 app.get('/api/users/:id', verifyToken, controllers.getUser); // Protected route
-app.get('/api/organisations', verifyToken, controllers.getOrganisations); // Protected route
+app.get('/api/organisations', verifyToken, controllers.getUserOrganisations); // Protected route
 
 // Connect to database and start server
 

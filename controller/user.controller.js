@@ -34,6 +34,9 @@ const userRegistration = async (req, res) => {
       name: orgName,
       userId: user.userId,
     });
+    await user.addOrganisation(organisation);
+
+
     const token = generateToken(user);
     res.status(201).json({
       status: "success",
@@ -47,6 +50,7 @@ const userRegistration = async (req, res) => {
           email: user.email,
           phone: user.phone,
         },
+        organisation
       },
     });
   } catch (error) {
@@ -73,9 +77,9 @@ const login = async (req, res) => {
   try {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(401).json({
+      return res.status(422).json({
         status: "Bad request",
-        message: "Authentication failed",
+        message: "Incorrect password",
       });
     }
 
@@ -106,18 +110,16 @@ const login = async (req, res) => {
 const createOrganisation = async (req, res) => {
   const { name, description } = req.body;
   const userId = req.user.userId;
-  console.log(userId);
+ 
   try {
     const organisation = await Organisation.create({
       name,
       description,
       userId,
     });
-   
-    const user = await User.findByPk(userId);
-    await user.addOrganisation(organisation)
-  
 
+    await organisation.addUser(userId);
+   
     res.status(201).json({
       status: "success",
       message: "Organisation created successfully",
@@ -131,244 +133,139 @@ const createOrganisation = async (req, res) => {
     console.error(error);
     res.status(400).json({
       status: "Bad Request",
-      message: "Client error",
+      message: "Error in creating organisation",
     });
   }
 };
 const getUser = async (req, res) => {
-  const userId = req.user.userId;
+  
+  try{
+  const userId = req.params.id;
+  const authorizedUser = req.user.userId
+  const user = await User.findOne({where: {userId} })
+ 
+  if (!user) {
+    return res.status(404).json({
+      status: 'Not Found',
+      message: 'User not found',
+    });
+  }
+
+
+  res.status(200).json({
+    status: "success",
+    message: "user details retrieved successfully",
+    data:{
+      userId: user.userId,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user?.phone,
+    }
+  });
+} catch (error) {
+  console.error(error);
+  res.status(500).json({
+    status: 'Error',
+    message: 'Internal server error',
+  });
+}
+};
+
+
+
+
+
+
+async function getUserOrganisations(req, res) {
+  const userId = req.user.userId; // Assuming user ID is retrieved from request parameters
+  console.log(userId)
 
   try {
-    const user = await User.findByPk(userId);
+    const user = await User.findByPk(userId, {
+      include: {
+        model: Organisation,
+        through: 'user_organisations', // Specify the junction table
+      },
+    });
+  
 
     if (!user) {
       return res.status(404).json({
-        status: "Not found",
-        message: "User not found",
+        status: 'Not Found',
+        message: 'User not found',
       });
     }
 
+    const organizations = user.Organisations; // Array of organizations the user belongs to
+
+
     res.status(200).json({
-      status: "success",
-      message: "User details retrieved successfully",
-      data: {
-        userId: user.userId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
-      },
+      status: 'success',
+      message: 'User organizations retrieved successfully',
+      data: organizations,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      status: "Error",
-      message: "Internal server error",
+      status: 'Error',
+      message: 'Internal server error',
     });
   }
-};
+}
 
-const getOrganisations = async (req, res) => {
-  const userId = req.user.userId; // Assuming you have user data from middleware or auth
-  console.log(userId);
+
+
+
+async function addUserToOrganisation(req, res) {
+  const orgId = req.params.orgId;
+const userId = req.user.userId;
+ const newUserId = req.body.userId;
+
   try {
-    const user = await User.findByPk(userId, {
-      include: [
-        {
-          model: Organisation,
-          as: "Organisations",
-        },
-      ],
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const organisations = user.Organisations;
-    const response = {
-      orgId: organisations.orgId,
-      name: organisations.name,
-      description: organisations.description,
-    };
-    console.log(response);
-    return res.status(200).json({
-      status: "success",
-      message: "Your organizations details retrieved successfully",
-      data: {
-        organisations: organisations,
+    // Find the organisation the user wants to add to
+    const organisation = await Organisation.findByPk(orgId, {
+      include: {
+        model: User, // Include the creator user
+        where: { userId: userId }, // Ensure it's the user's organisation
       },
     });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
 
-// const getOrganisations = async (req, res) => {
-//   const userId = req.user.userId; // Get user ID from authenticated user
-
-//   try {
-//     const organisations = await Organisation.findAll({
-//       where: {
-//         [Sequelize.Op.or]: [
-//           { userId },
-//           {
-//             // Organisations where the user is a member (through User-Organisation association)
-//             "$user.userId$": userId,
-//           },
-//         ],
-//       },
-//       include: [
-//         {
-//           model: User,
-//           as: "user",
-//           attributes: ["firstName", "lastName"], // Only include specific user attributes
-//         },
-//       ],
-//     });
-
-//     res.status(200).json({
-//       status: "success",
-//       message: "Organisations retrieved successfully",
-//       data: {
-//         organisations: organisations.map((organisation) => ({
-//           orgId: organisation.orgId,
-//           name: organisation.name,
-//           description: organisation.description,
-//           user: organisation.user, // Include user details
-//         })),
-//       },
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       status: "Error",
-//       message: "Internal server error",
-//     });
-//   }
-// };
-
-
-
-const addUserToOrganization = async (req, res) => {
-  const orgId = req.params.orgId;
-  const userId = req.user.userId;
-  const userToBeRegistered = req.body.userId; // Assuming user ID is in request body
-
-  try {
-    // Validate input data (optional)
-    if (!orgId || !userId || !userToBeRegistered) {
-      return res.status(400).json({
-        status: "Bad Request",
-        message: "Missing required fields",
-      });
-    }
-    const organisationData = await Organisation.findByPk(orgId)
-    if (!organisationData) {
+    if (!organisation) {
       return res.status(404).json({
-        status: "Not found",
-        message: "Organisation not found",
-      });
-    }
-    
-    const userToBeAdded = await User.findByPk(userToBeRegistered)
-    const isMember = await (userToBeAdded.hasOrganisation(orgId))
-    console.log(isMember)
-    if (isMember) {
-      return res.status(400).json({
-        status: "Bad Request",
-        message: "User already belongs to this organisation",
+        status: 'Not Found',
+        message: 'Organisation not found or you are not the creator',
       });
     }
 
-    
-   
-   const organisation = await Organisation.create({
-      orgId: organisationData.orgId,
-      name: organisationData.name,
-      description: organisationData.description,
-      userId : userToBeRegistered
-    })
+    // Find the user to be added
+    const newUser = await User.findByPk(newUserId);
 
-    const user = await User.findByPk(userToBeRegistered);
-    await user.addOrganisation(organisation)
+    if (!newUser) {
+      return res.status(404).json({
+        status: 'Not Found',
+        message: 'User to be added not found',
+      });
+    }
+
+    // Add the new user to the organisation through the junction table
+    await organisation.addUser(newUser);
 
     res.status(200).json({
-      status: "success",
-      message: "User added to organisation successfully",
-      data: organisation
+      status: 'success',
+      message: 'User added to organisation successfully',
     });
   } catch (error) {
     console.error(error);
-    if (error instanceof SequelizeValidationError) {
-      return res.status(400).json({
-        status: "Bad Request",
-        message: error.errors[0].message, 
-      });
-    } else {
-      return res.status(500).json({
-        status: "Error",
-        message: "Internal server error", 
-      });
-    }
+    res.status(500).json({
+      status: 'Error',
+      message: 'Internal server error',
+    });
   }
-};
+}
 
 
 
-
-// const addUserToOrganization = async (req, res) => {
-//   const orgId = req.params.orgId;
-//   const owner = req.user.userId;
-//   const userId = req.body.userId;
-
-//   try {
-//     const organisationData = await Organisation.findByPk(orgId);
-//     if (!organisationData) {
-//       return res.status(404).json({
-//         status: "Not found",
-//         message: "Organisation not found",
-//       });
-//     }
-
-//     const isAuthourizedOwner = organisationData.userId;
-//     if (owner !== isAuthourizedOwner) {
-//       return res.status(401).json({
-//         status: "unauthorized",
-//         message: "You are not authorized to perform this action",
-//       });
-//     }
-
-//     // Check if user is already a member
-//     const isMember = await Organisation.findOne({where:{ userId}});
-
-//     if (isMember) {
-//       return res.status(400).json({
-//         status: "Bad Request",
-//         message: "User already belongs to this organisation",
-//       });
-//     }
-
-//     // User is not a member, proceed with adding
-//     await Organisation.create({
-//       name: organisationData.name,
-//       description: organisationData.description,
-//       userId: userToBeRegistered,
-//     });
-
-//     res.status(200).json({
-//       status: "success",
-//       message: "User added to organisation successfully",
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       status: "Error",
-//       message: "Internal server error",
-//     });
-//   }
-// };
 
 
 module.exports = {
@@ -376,6 +273,6 @@ module.exports = {
   login,
   createOrganisation,
   getUser,
-  getOrganisations,
-  addUserToOrganization,
+  getUserOrganisations,
+  addUserToOrganisation,
 };
