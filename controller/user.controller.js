@@ -10,7 +10,11 @@ const userRegistration = async (req, res) => {
   if (!email) {
     return res
       .status(422)
-      .json({ field: "email", message: "Email is required" });
+      .json( {
+        error: [
+          { field: "email", message: "Email is required" },
+        ]
+      });
   }
   const existingUser = await User.findOne({ where: { email } });
   if (existingUser) {
